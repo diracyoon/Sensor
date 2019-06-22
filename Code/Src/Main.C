@@ -66,6 +66,14 @@ int main(int argc, char* argv[])
   ofstream fout;
   int date_yesterday = -1;
   
+  char buf[512];
+  getcwd(buf, 512);
+  string pwd = buf;
+  pwd += "/../Output/";
+
+  string elog_subject;
+  string name_yesterday;
+  
   while(1)
     {
       /*getting time info.*/
@@ -76,25 +84,68 @@ int main(int argc, char* argv[])
       
       if(date_today!=date_yesterday)
 	{
+	  //close file for yesterday
+	  if(fout.is_open())
+	    {
+	      fout.close();
+
+	      //submit to e-log
+	      string hostname = "147.46.50.23";
+	      string port = "31417";
+	      
+	      string command = "elog";
+
+	      //hostname
+	      command += " -h " + hostname;
+
+	      //port
+	      command += " -p " + port;
+
+	      //ssl
+	      command += " -s";
+
+	      //encoding
+	      command += " -n 1";
+
+	      //ID and passward
+	      command += " -u Sensor Sensor";
+
+	      //author
+	      command += " -a Author=Env_Sensor";
+
+	      //type
+	      command += " -l Monitoring";
+
+	      //subject
+	      command += " -a Subject=" + elog_subject;
+
+	      //attachmet
+	      command += " -f " + name_yesterday;
+
+	      system(command.c_str());
+	    }//if(fout.is_open())
+
+	  //open file for today
 	  int year = time_tm->tm_year + 1900;
 	  int month = time_tm->tm_mon + 1;
 	  int date = time_tm->tm_mday;
 
-	  string name = to_string(year);
-	  name += "_";
-	  name += string(2 - to_string(month).length(), '0') + to_string(month);
-	  name += "_";
-	  name += string(2 - to_string(date).length(), '0') + to_string(date);
-	  name += ".dat";
+	  string name_today = to_string(year);
+	  name_today += "_";
+	  name_today += string(2 - to_string(month).length(), '0') + to_string(month);
+	  name_today += "_";
+	  name_today += string(2 - to_string(date).length(), '0') + to_string(date);
+	  
+	  elog_subject = name_today;
+	  
+	  name_today += ".dat";
+	  name_today = pwd + name_today;
 
-	  //close file for yesterday
-	  if(fout.is_open()) fout.close();
-
-	  //open file for today
-	  fout.open(name, std::ofstream::app);
-
+	  fout.open(name_today, std::ofstream::app);
+	  
+	  name_yesterday = name_today;
 	  date_yesterday = date_today;
-	}
+	}//if(date_today!=date_yesterday)
 
       /*getting sensor data*/
       dev.delay_ms(10000);
