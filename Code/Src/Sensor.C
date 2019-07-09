@@ -9,7 +9,7 @@ int Sensor::fd = -1;
 Sensor::Sensor()
 {
   //sampling periond in second
-  delay = 10;
+  delay = 10*60;
   
   if((fd = open(IIC_Dev, O_RDWR)) < 0) throw "Failed to open the i2c bus";
   if(ioctl(fd, I2C_SLAVE, 0x76) < 0) throw "Failed to acquire bus access and/or talk to slave.";
@@ -123,7 +123,7 @@ void Sensor::Run()
 	  elog_subject = name_today;
 
 	  name_today += ".dat";
-	  name_today = "/home/iyoon/Sensor/Output/" + name_today;
+	  name_today = "/Env_Data/" + name_today;
 
 	  fout.open(name_today, std::ofstream::app);
 
@@ -137,6 +137,7 @@ void Sensor::Run()
       struct bme280_data comp_data;
       rslt = bme280_get_sensor_data(BME280_ALL, &comp_data, &dev);
 
+      cout << time_tm->tm_hour << ":" << time_tm->tm_min << ":" << time_tm->tm_sec << "," << comp_data.temperature << "," << comp_data.pressure/100 << "," << comp_data.humidity << endl;
       fout << time_tm->tm_hour << ":" << time_tm->tm_min << ":" << time_tm->tm_sec << "," << comp_data.temperature << "," << comp_data.pressure/100 << "," << comp_data.humidity << endl;
     }
   
