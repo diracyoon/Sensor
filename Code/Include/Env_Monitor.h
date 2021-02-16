@@ -4,6 +4,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <cstring>
+#include <fstream>
+#include <ctime>
 
 #include "bme280.h"
 
@@ -11,11 +13,11 @@ using namespace std;
 
 #define IIC_Dev  "/dev/i2c-1"
 
-class Sensor
+class Env_Monitor
 {
  public:
-  Sensor();
-  ~Sensor();
+  Env_Monitor();
+  ~Env_Monitor();
 
   void Run();
   
@@ -31,4 +33,11 @@ class Sensor
   static int fd;
 
   int delay;
+  
+  string elog_subject;
+  string name_yesterday;
+  
+  ofstream fout;
+
+  void Submit_ELog();
 };

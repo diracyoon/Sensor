@@ -4,14 +4,14 @@
 #include <iostream>
 #include <signal.h>
 
-#include <Sensor.h>
+#include <Env_Monitor.h>
 
 using namespace std;
 
 int main(int argc, char* argv[])
 {
   pid_t pid = fork();
-  cout << "Sensor: Pid= " << pid << endl;
+  cout << "Env_Monitor: Pid= " << pid << endl;
   
   if(pid<0)
     {
@@ -38,8 +38,8 @@ int main(int argc, char* argv[])
   setsid();
 
   //Sensor
-  Sensor sensor;
-  sensor.Run();
+  Env_Monitor env_monitor;
+  env_monitor.Run();
   
   return 0;
 }//

@@ -9,7 +9,7 @@ int Sensor::fd = -1;
 Sensor::Sensor()
 {
   //sampling periond in second
-  delay = 10*60;
+  delay = 1;
   
   if((fd = open(IIC_Dev, O_RDWR)) < 0) throw "Failed to open the i2c bus";
   if(ioctl(fd, I2C_SLAVE, 0x76) < 0) throw "Failed to acquire bus access and/or talk to slave.";
@@ -21,7 +21,7 @@ Sensor::Sensor()
   dev.delay_ms = user_delay_ms;
 
   rslt = bme280_init(&dev);
-  cout << "BME280 Init Result is: " << (int)rslt << endl;
+  //cout << "BME280 Init Result is: " << (int)rslt << endl;
 
   /* Recommended mode of operation*/
   dev.settings.osr_h = BME280_OVERSAMPLING_1X;
@@ -39,6 +39,17 @@ Sensor::Sensor()
 
   rslt = bme280_set_sensor_settings(settings_sel, &dev);
   rslt = bme280_set_sensor_mode(BME280_NORMAL_MODE, &dev);
+
+
+  /*getting sensor data*/
+  dev.delay_ms(delay*1000);
+
+  struct bme280_data comp_data;
+  rslt = bme280_get_sensor_data(BME280_ALL, &comp_data, &dev);
+
+  cout << "Temp: " << comp_data.temperature << endl;
+  cout << "Pressure: " << comp_data.pressure/100 << endl;
+  cout << "RH: " << comp_data.humidity << endl;
 }//Sensor::Sensor()
 
 //////////
@@ -46,103 +57,6 @@ Sensor::Sensor()
 Sensor::~Sensor()
 {
 }//Sensor::~Sensor()
-
-//////////
-
-void Sensor::Run()
-{
-  int date_yesterday = -1;
-  string elog_subject;
-  string name_yesterday;
-  
-  while(1)
-    {
-      /*getting time info.*/
-      time_t current_time = time(NULL);
-      struct tm* time_tm = localtime(&current_time);
-
-      int date_today = time_tm->tm_mday;
-
-      if(date_today!=date_yesterday)
-	{
-	  //close file for yesterday
-	  if(fout.is_open())
-	    {
-	      fout.close();
-	      
-	      //submit to e-log
-	      string hostname = "147.46.50.23";
-	      string port = "31417";
-
-	      string command = "elog";
-
-	      //hostname
-	      command += " -h " + hostname;
-
-	      //port
-	      command += " -p " + port;
-
-	      //ssl
-	      command += " -s";
-	      //encoding
-	      command += " -n 1";
-
-	      //logbook
-	      command += " -l Env_Monitoring_UoS_UndLab";
-
-	      //ID and passward
-	      command += " -u Sensor Sensor";
-
-	      //author
-	      command += " -a Author=Env_Sensor";
-
-	      //subject
-	      command += " -a Subject=" + elog_subject;
-
-	      //type
-	      command += " -a type=Monitoring";
-
-	      //message
-	      command += " -m " + name_yesterday;
-
-	      //cout << command << endl;
-	      system(command.c_str());
-	    }//if(fout.is_open())
-
-	  //open file for today
-	  int year = time_tm->tm_year + 1900;
-	  int month = time_tm->tm_mon + 1;
-	  int date = time_tm->tm_mday;
-
-	  string name_today = to_string(year);
-	  name_today += "_";
-	  name_today += string(2 - to_string(month).length(), '0') + to_string(month);
-	  name_today += "_";
-	  name_today += string(2 - to_string(date).length(), '0') + to_string(date);
-
-	  elog_subject = name_today;
-
-	  name_today += ".dat";
-	  name_today = "/Env_Data/" + name_today;
-
-	  fout.open(name_today, std::ofstream::app);
-
-	  name_yesterday = name_today;
-	  date_yesterday = date_today;
-	}
-
-      /*getting sensor data*/
-      dev.delay_ms(delay*1000);
-
-      struct bme280_data comp_data;
-      rslt = bme280_get_sensor_data(BME280_ALL, &comp_data, &dev);
-
-      cout << time_tm->tm_hour << ":" << time_tm->tm_min << ":" << time_tm->tm_sec << "," << comp_data.temperature << "," << comp_data.pressure/100 << "," << comp_data.humidity << endl;
-      fout << time_tm->tm_hour << ":" << time_tm->tm_min << ":" << time_tm->tm_sec << "," << comp_data.temperature << "," << comp_data.pressure/100 << "," << comp_data.humidity << endl;
-    }
-  
-  return;
-}//void Sensor::Run() 
 
 //////////
 
@@ -175,6 +89,6 @@ int8_t Sensor::user_i2c_write(uint8_t id, uint8_t reg_addr, uint8_t *data, uint1
   delete[] buf;
 
   return 0;
-}//int8_t user_i2c_write(uint8_t id, uint8_t reg_addr, uint8_t *data, uint16_t len)
+}//int8_t Sensor::user_i2c_write(uint8_t id, uint8_t reg_addr, uint8_t *data, uint16_t len)
 
 //////////
